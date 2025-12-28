@@ -101,3 +101,25 @@ class DatabaseHelper {
     return await db.rawQuery(query, [subIndexId]);
   }
 }
+// TODO : 
+ 
+
+// in detail screen check in ${_selectedLanguage}Description:
+
+// if there is any text like <abcd-efg> present, extract the entire text
+// (Also in the front end remove the brackets and show it as a hyperlink in a good UX)
+
+// When user taps on that link
+
+// What it should do is fire this query : 
+
+// SELECT lm.*, l.{language}Title,l.{language}Description ,l.{language},
+// CONCAT_WS('', l.ArabicText1, l.ArabicText2, l.ArabicText3, l.ArabicText4, l.ArabicText5, l.ArabicText6, l.ArabicText7, l.ArabicText8, l.ArabicText9, l.ArabicText10, l.ArabicText11, l.ArabicText12, l.ArabicText13, l.ArabicText14, l.ArabicText15, l.ArabicText16, l.ArabicText17, l.ArabicText18, l.ArabicText19, l.ArabicText20),
+// l.RArabic,
+// FROM linesmetadata lm 
+// JOIN lines l ON lm.LinesId = l.id 
+// JOIN subindex s ON lm.SubindexId = s.id
+// WHERE s.Hyperlink${language}Name = 'EXTRACTED_TEXT_HERE'
+// ORDER BY lm.Number ASC;
+
+// Get the result and again load the detail page with this query results

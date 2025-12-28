@@ -75,107 +75,112 @@ class _DetailedScreenState extends State<DetailedScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0.5,
-        toolbarHeight: 120,
+        automaticallyImplyLeading: false,
+        // scrolledUnderElevation: 0.5,
+        toolbarHeight: 110,
         title: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(
-              widget.title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                BackButton(
+                  style: ButtonStyle(),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                Text(
+                  widget.title,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w600),
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.copy),
+                  onPressed: () {
+                    String copied = _generateCopiedText();
+                    Clipboard.setData(ClipboardData(text: copied));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Content copied to clipboard')),
+                    );
+                  },
+                )
+              ],
             ),
             const SizedBox(height: 8),
             // Checkboxes row
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Arabic checkbox
-                  Tooltip(
-                    message: 'Toggle Arabic',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: _showArabic,
-                          onChanged: (value) {
-                            setState(() {
-                              _showArabic = value ?? true;
-                            });
-                            _savePreferences();
-                          },
-                        ),
-                        const Text('Arabic',
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 11)),
-                      ],
-                    ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Arabic checkbox
+                Tooltip(
+                  message: 'Toggle Arabic',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _showArabic,
+                        onChanged: (value) {
+                          setState(() {
+                            _showArabic = value ?? true;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                      const Text('Arabic',
+                          style: TextStyle(color: Colors.black, fontSize: 11)),
+                    ],
                   ),
-                  // Transliteration checkbox
-                  Tooltip(
-                    message: 'Toggle Transliteration',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: _showTransliteration,
-                          onChanged: (value) {
-                            setState(() {
-                              _showTransliteration = value ?? true;
-                            });
-                            _savePreferences();
-                          },
-                        ),
-                        const Text('Transliteration',
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 11)),
-                      ],
-                    ),
+                ),
+                // Transliteration checkbox
+                Tooltip(
+                  message: 'Toggle Transliteration',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _showTransliteration,
+                        onChanged: (value) {
+                          setState(() {
+                            _showTransliteration = value ?? true;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                      const Text('Transliteration',
+                          style: TextStyle(color: Colors.black, fontSize: 11)),
+                    ],
                   ),
-                  // Translation checkbox
-                  Tooltip(
-                    message: 'Toggle Translation',
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: _showTranslation,
-                          onChanged: (value) {
-                            setState(() {
-                              _showTranslation = value ?? true;
-                            });
-                            _savePreferences();
-                          },
-                        ),
-                        const Text('Translation',
-                            style:
-                                TextStyle(color: Colors.black, fontSize: 11)),
-                      ],
-                    ),
+                ),
+                // Translation checkbox
+                Tooltip(
+                  message: 'Toggle Translation',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Checkbox(
+                        value: _showTranslation,
+                        onChanged: (value) {
+                          setState(() {
+                            _showTranslation = value ?? true;
+                          });
+                          _savePreferences();
+                        },
+                      ),
+                      const Text('Translation',
+                          style: TextStyle(color: Colors.black, fontSize: 11)),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ],
         ),
-        actions: [
-          // Copy button
-          IconButton(
-            icon: const Icon(Icons.copy),
-            onPressed: () {
-              String copied = _generateCopiedText();
-              Clipboard.setData(ClipboardData(text: copied));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Content copied to clipboard')),
-              );
-            },
-          )
-        ],
       ),
       body: _lines.isEmpty
           ? const Center(child: CircularProgressIndicator())
@@ -231,9 +236,9 @@ class _DetailedScreenState extends State<DetailedScreen> {
       child: Text(
         description.toString(),
         style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey[600],
-          fontStyle: FontStyle.italic,
+          fontSize: 14,
+          color: Colors.grey[700],
+          // fontStyle: FontStyle.italic,
           height: 1.5,
         ),
       ),
@@ -247,13 +252,14 @@ class _DetailedScreenState extends State<DetailedScreen> {
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Center(
         child: Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(12.0),
           decoration: BoxDecoration(
             color: Colors.amber[50],
             borderRadius: BorderRadius.circular(4),
-            border: Border(
-              right: BorderSide(color: Colors.amber[200]!, width: 3),
-            ),
+            // border: Border(
+            //   right: BorderSide(color: Colors.amber[200]!, width: 3),
+            // ),
           ),
           child: Text(
             arabicContent.toString(),
@@ -263,8 +269,10 @@ class _DetailedScreenState extends State<DetailedScreen> {
               letterSpacing: 0,
               height: 1.8,
               color: Colors.black87,
+              // align: TextAlign.center,
             ),
             textDirection: TextDirection.rtl,
+            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -280,16 +288,16 @@ class _DetailedScreenState extends State<DetailedScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Transliteration',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
+          // Text(
+          //   'Transliteration',
+          //   style: TextStyle(
+          //     fontSize: 11,
+          //     fontWeight: FontWeight.w600,
+          //     color: Colors.grey[700],
+          //     letterSpacing: 0.5,
+          //   ),
+          // ),
+          // const SizedBox(height: 6),
           Text(
             transliteration.toString(),
             style: const TextStyle(
@@ -312,23 +320,23 @@ class _DetailedScreenState extends State<DetailedScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Translation ($_selectedLanguage)',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey[700],
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 6),
+          // Text(
+          //   'Translation ($_selectedLanguage)',
+          //   style: TextStyle(
+          //     fontSize: 11,
+          //     fontWeight: FontWeight.w600,
+          //     color: Colors.grey[700],
+          //     letterSpacing: 0.5,
+          //   ),
+          // ),
+          // const SizedBox(height: 6),
           Text(
             translation.toString(),
             style: const TextStyle(
               fontSize: 14,
               color: Colors.black87,
               height: 1.6,
-              letterSpacing: 0.3,
+              letterSpacing: 1,
             ),
           ),
         ],
