@@ -3,125 +3,158 @@ import 'package:raazoneyaz/detail_screen.dart';
 import 'database_helper.dart';
 
 class CategoriesScreen extends StatefulWidget {
+  final int categoryId;
+  final int parentId;
+  final int level;
+  final String? title;
+
+  const CategoriesScreen({
+    Key? key,
+    this.categoryId = 0,
+    this.parentId = 0,
+    this.level = 0,
+    this.title,
+  }) : super(key: key);
+
   @override
   _CategoriesScreenState createState() => _CategoriesScreenState();
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
-  List<Map<String, dynamic>> _categories = [];
-  List<Map<String, dynamic>> _subcategories = [];
-  int _currentLevel = 0; // Level for subcategories
-
+  List<Map<String, dynamic>> items = [];
   late DatabaseHelper _dbHelper;
 
   @override
   void initState() {
     super.initState();
     _dbHelper = DatabaseHelper();
-    _fetchCategories(); // Fetch all categories when the app starts
+    if (widget.categoryId == 0) {
+      _fetchCategories();
+    } else {
+      _fetchSubcategories();
+    }
   }
 
   Future<void> _fetchCategories() async {
-    // Fetch all categories without any condition
-    final result = await _dbHelper.getCategories();
-    setState(() {
-      _categories = result; // Load categories in the UI
-    });
+    try {
+      final result = await _dbHelper.getCategories();
+      debugPrint('Fetched categories: $result');
+      setState(() {
+        items = result;
+      });
+    } catch (e) {
+      debugPrint('Error fetching categories: $e');
+      _showErrorSnackBar('Failed to load categories.');
+    }
   }
 
-  Future<void> _fetchSubcategories(int parentId, int level) async {
-    debugPrint("ParentID: $parentId, Level: $level");
-    final result = await _dbHelper.getSubcategories(parentId, level);
-
-    if (result.isEmpty) {
-      debugPrint("No subcategories found.");
-      return;
-    }
-
-    // Check if all subcategories have HasChildren = 0
-    bool allHaveNoChildren = result.every((item) => item['HasChildren'] == 0);
-
-    if (allHaveNoChildren) {
-      // Navigate to detail screen if no further subcategories exist
-      await _navigateToDetailScreen(parentId, result.first['EnglishName']);
-    } else {
-      // Increment level and display subcategories
+  Future<void> _fetchSubcategories() async {
+    try {
+      final result = await _dbHelper.getSubcategories(
+          widget.categoryId, widget.parentId, widget.level);
+      debugPrint(
+          'Fetched subcategories (CategoryId=${widget.categoryId}, ParentId=${widget.parentId}, Level=${widget.level}): $result');
       setState(() {
-        _currentLevel = level + 1;
-        _subcategories = result;
+        items = result;
       });
+    } catch (e) {
+      debugPrint('Error fetching subcategories: $e');
+      _showErrorSnackBar('Failed to load subcategories.');
     }
   }
 
   Future<void> _navigateToDetailScreen(int subIndexId, String title) async {
-    // Fetch metadata for the selected subcategory
-    final linesMetadata = await _dbHelper.getLinesMetadata(subIndexId);
+    try {
+      debugPrint(
+          'Navigating to detail screen for subIndexId=$subIndexId, title=$title');
+      final lines = await _dbHelper.getLinesForSubindex(subIndexId);
+      debugPrint('Fetched ${lines.length} lines for subIndexId=$subIndexId');
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                DetailedScreen(title: title, subIndexId: subIndexId),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error navigating to detail screen: $e');
+      _showErrorSnackBar('Failed to load details.');
+    }
+  }
 
-    // Extract Lines IDs from metadata
-    final lineIds = linesMetadata.map((e) => e['LinesId']).toList();
-
-    // Fetch final lines data using the extracted IDs
-    final lines = await _dbHelper.getLines(lineIds);
-
-    // Navigate to the detailed screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetailedScreen(title: title, lines: lines),
-      ),
-    );
+  void _showErrorSnackBar(String message) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final itemsToDisplay =
-        _subcategories.isEmpty ? _categories : _subcategories;
-
+    final isRoot = widget.categoryId == 0;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_subcategories.isEmpty ? 'Categories' : 'Subcategories'),
-        leading: _subcategories.isNotEmpty
-            ? IconButton(
-                icon: Icon(Icons.arrow_back),
-                onPressed: () {
-                  setState(() {
-                    _subcategories = [];
-                    _currentLevel = 0; // Reset level on back
-                  });
-
-                  // Navigator.pop(context);
-                },
-              )
-            : null,
+        title: Text(widget.title ?? (isRoot ? 'Categories' : 'Subcategories')),
+        automaticallyImplyLeading: !isRoot,
       ),
-      body: ListView.builder(
-        itemCount: itemsToDisplay.length,
-        itemBuilder: (context, index) {
-          final item = itemsToDisplay[index];
-          return ListTile(
-            title: Text(item['EnglishName'] ?? item['EnglishIndexName']),
-            trailing:
-                item['HasChildren'] == 1 ? Icon(Icons.arrow_forward) : null,
-            onTap: () async {
-              if (_subcategories.isEmpty) {
-                // When in categories view, fetch subcategories with Level = 0
-                await _fetchSubcategories(item['Id'], 0);
-              } else {
-                // In subcategories view, increment level or navigate to detail
-                if (item['HasChildren'] == 1) {
-                  debugPrint("Inside Has Children ==1");
-                  await _fetchSubcategories(item['Id'], _currentLevel);
-                } else if (item['HasChildren'] == 0) {
-                  _navigateToDetailScreen(item['Id'],
-                      item['EnglishName'] ?? item['EnglishIndexName']);
-                }
-              }
-            },
-          );
-        },
-      ),
+      body: items.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final item = items[index];
+                final hasChildren = item['HasChildren'] == 1;
+                final displayText =
+                    item['EnglishIndexName'] ?? item['EnglishName'] ?? '';
+                return ListTile(
+                  title: Text(displayText),
+                  trailing: hasChildren ? Icon(Icons.arrow_forward) : null,
+                  onTap: () {
+                    if (isRoot) {
+                      // tapped a top-level category
+                      final catId = item['Id'] as int;
+                      debugPrint(
+                          'Tapped top-level category: CategoryId=$catId, title=$displayText');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoriesScreen(
+                            categoryId: catId,
+                            parentId: catId,
+                            level: 0,
+                            title: displayText,
+                          ),
+                        ),
+                      );
+                    } else if (hasChildren) {
+                      // deeper level
+                      final nextParent = item['Id'] as int;
+                      debugPrint(
+                          'Tapped subcategory: CategoryId=${widget.categoryId}, ParentId=$nextParent, Level=${widget.level + 1}, title=$displayText');
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoriesScreen(
+                            categoryId: widget.categoryId,
+                            parentId: nextParent,
+                            level: widget.level + 1,
+                            title: displayText,
+                          ),
+                        ),
+                      );
+                    } else {
+                      // no children, navigate to detail
+                      debugPrint(
+                          'Tapped leaf item: Id=${item['Id']}, title=$displayText');
+                      _navigateToDetailScreen(item['Id'] as int, displayText);
+                    }
+                  },
+                );
+              },
+            ),
     );
   }
 }
-
-//===

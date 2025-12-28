@@ -1,28 +1,49 @@
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DatabaseHelper {
   static Database? _database;
+  static final DatabaseHelper _instance = DatabaseHelper._internal();
 
-  void _logQuery(String query, [List<dynamic>? args]) {
-    print('Executing SQL Query: $query');
-    if (args != null) {
-      print('With arguments: $args');
-    }
+  DatabaseHelper._internal();
+
+  factory DatabaseHelper() {
+    return _instance;
   }
 
-  static Future<Database> initDatabase() async {
+  /// Logs SQL query with all placeholders replaced by actual argument values
+  void _logQuery(String query, [List<dynamic>? args]) {
+    String formatted = query;
+    if (args != null && args.isNotEmpty) {
+      for (var arg in args) {
+        String value;
+        if (arg is String) {
+          // Escape single quotes
+          final escaped = arg.replaceAll("'", "''");
+          value = "'" + escaped + "'";
+        } else {
+          value = arg.toString();
+        }
+        formatted = formatted.replaceFirst('?', value);
+      }
+    }
+    debugPrint('Executing SQL Query: $formatted');
+  }
+
+  Future<Database> initDatabase() async {
     if (_database != null) return _database!;
 
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, 'ron.db');
-    print('Database path: $path');
+    debugPrint('Database path: $path');
 
     if (!await File(path).exists()) {
-      print('Creating new database from assets');
+      debugPrint('Creating new database from assets');
       ByteData data = await rootBundle.load('assets/ron.db');
       List<int> bytes =
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
@@ -33,36 +54,50 @@ class DatabaseHelper {
     return _database!;
   }
 
+  /// Fetch only visible categories (IsVisible = 1)
   Future<List<Map<String, dynamic>>> getCategories() async {
     final db = await initDatabase();
-    const query = "SELECT * FROM categories";
+    const query = 'SELECT * FROM categories WHERE IsVisible = 1';
     _logQuery(query);
     return await db.rawQuery(query);
   }
 
+  /// Fetch subcategories for a given categoryId, parentId, and level, ordered by Number asc
   Future<List<Map<String, dynamic>>> getSubcategories(
-      int parentId, int level) async {
+      int categoryId, int parentId, int level) async {
     final db = await initDatabase();
-    const query = "SELECT * FROM subindex WHERE ParentId = ? AND Level = ?";
-    String query2 =
-        "SELECT * FROM subindex WHERE ParentId = $parentId AND Level = $level";
-    _logQuery(query2);
-    return await db.rawQuery(query, [parentId, level]);
+    const query =
+        'SELECT * FROM subindex WHERE CategoryId = ? AND ParentId = ? AND Level = ? ORDER BY Number ASC';
+    _logQuery(query, [categoryId, parentId, level]);
+    return await db.rawQuery(query, [categoryId, parentId, level]);
   }
 
-  Future<List<Map<String, dynamic>>> getLinesMetadata(int subIndexId) async {
+  /// Fetch lines metadata joined with lines data for a subindex, ordered by metadata.Number asc
+  Future<List<Map<String, dynamic>>> getLinesForSubindex(int subIndexId) async {
     final db = await initDatabase();
-    const query = "SELECT * FROM linesmetadata WHERE SubIndexId = ?";
-    String query2 =
-        "SELECT * FROM linesmetadata WHERE SubIndexId = $subIndexId";
-    _logQuery(query2);
+
+    // Retrieve the selected language from shared preferences
+    final prefs = await SharedPreferences.getInstance();
+    final language = prefs.getString('selectedLanguage') ?? 'English';
+
+    // Dynamically construct the query based on the selected language
+    final query = '''
+      SELECT lm.*, 
+             l.${language}Title, 
+             l.${language}Description, 
+             l.${language}, 
+             l.RArabic,
+             CONCAT_WS('', l.ArabicText1, l.ArabicText2, l.ArabicText3, l.ArabicText4, l.ArabicText5, 
+                       l.ArabicText6, l.ArabicText7, l.ArabicText8, l.ArabicText9, l.ArabicText10, 
+                       l.ArabicText11, l.ArabicText12, l.ArabicText13, l.ArabicText14, l.ArabicText15, 
+                       l.ArabicText16, l.ArabicText17, l.ArabicText18, l.ArabicText19, l.ArabicText20) AS ArabicContent
+      FROM linesmetadata lm
+      JOIN lines l ON lm.LinesId = l.id
+      WHERE lm.SubindexId = ?
+      ORDER BY lm.Number ASC
+    ''';
+
+    _logQuery(query, [subIndexId]);
     return await db.rawQuery(query, [subIndexId]);
-  }
-
-  Future<List<Map<String, dynamic>>> getLines(List<dynamic> lineIds) async {
-    final db = await initDatabase();
-    final query = "SELECT * FROM lines WHERE Id IN (${lineIds.join(',')})";
-    _logQuery(query);
-    return await db.rawQuery(query);
   }
 }
