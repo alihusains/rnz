@@ -32,12 +32,14 @@ class _DetailedScreenState extends State<DetailedScreen> {
   bool _showArabic = true;
   bool _showTransliteration = true;
   bool _showTranslation = true;
+  bool _isBookmarked = false;
 
   @override
   void initState() {
     super.initState();
     _fetchData();
     _loadPreferences();
+    _checkIfBookmarked();
   }
 
   Future<void> _loadPreferences() async {
@@ -56,6 +58,57 @@ class _DetailedScreenState extends State<DetailedScreen> {
     await prefs.setBool('showTranslation', _showTranslation);
   }
 
+  Future<void> _checkIfBookmarked() async {
+    final db = DatabaseHelper();
+    final isBookmarked = await db.isBookmarked(
+      subIndexId: widget.subIndexId,
+      language: _selectedLanguage ?? 'English',
+    );
+
+    if (mounted) {
+      setState(() {
+        _isBookmarked = isBookmarked;
+      });
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final db = DatabaseHelper();
+    final language = _selectedLanguage ?? 'English';
+
+    try {
+      if (_isBookmarked) {
+        await db.removeBookmark(
+          subIndexId: widget.subIndexId,
+          language: language,
+        );
+      } else {
+        await db.saveBookmark(
+          subIndexId: widget.subIndexId,
+          title: widget.title,
+          language: language,
+        );
+      }
+
+      if (mounted) {
+        setState(() {
+          _isBookmarked = !_isBookmarked;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isBookmarked ? 'Added to bookmarks' : 'Removed from bookmarks',
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error toggling bookmark: $e');
+    }
+  }
+
   Future<void> _fetchData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -71,6 +124,8 @@ class _DetailedScreenState extends State<DetailedScreen> {
       setState(() {
         _lines = data;
       });
+
+      await _checkIfBookmarked();
     } catch (e) {
       debugPrint('Error fetching data: $e');
       if (mounted) {
@@ -87,7 +142,6 @@ class _DetailedScreenState extends State<DetailedScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        // scrolledUnderElevation: 0.5,
         toolbarHeight: 110,
         title: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -101,15 +155,23 @@ class _DetailedScreenState extends State<DetailedScreen> {
                   style: ButtonStyle(),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                Text(
-                  widget.title,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.w600),
-                  maxLines: 1,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w600),
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
+                IconButton(
+                  icon: Icon(
+                    _isBookmarked ? Icons.favorite : Icons.favorite_border,
+                    color: _isBookmarked ? Colors.red : null,
+                  ),
+                  onPressed: _toggleBookmark,
+                ),
                 IconButton(
                   icon: const Icon(Icons.copy),
                   onPressed: () {
@@ -207,12 +269,11 @@ class _DetailedScreenState extends State<DetailedScreen> {
                     _buildTitle(line),
                     // Description
                     _buildDescription(line),
-                    // Arabic Content
+                    // Grouped content: Arabic, Transliteration, Translation
                     if (_showArabic) _buildArabicContent(line),
-                    // Transliteration (RArabic)
-                    if (_showTransliteration) _buildTransliteration(line),
-                    // Translation (Language content)
-                    if (_showTranslation) _buildTranslation(line),
+                    if (_showTransliteration)
+                      _buildTransliterationGrouped(line),
+                    if (_showTranslation) _buildTranslationGrouped(line),
                     // Spacing between items
                     const SizedBox(height: 20),
                   ],
@@ -302,93 +363,136 @@ class _DetailedScreenState extends State<DetailedScreen> {
           decoration: BoxDecoration(
             color: Colors.amber[50],
             borderRadius: BorderRadius.circular(4),
-            // border: Border(
-            //   right: BorderSide(color: Colors.amber[200]!, width: 3),
-            // ),
           ),
-          child: Text(
-            arabicContent.toString(),
-            style: const TextStyle(
-              fontFamily: 'Arabic',
-              fontSize: 26,
-              letterSpacing: 0,
-              height: 1.8,
-              color: Colors.black87,
-              // align: TextAlign.center,
-              fontFeatures: [
-                FontFeature.superscripts(),
-                FontFeature.subscripts(),
-                FontFeature.enable('curs'),
-                FontFeature.enable('ccmp'),
-                FontFeature.enable('cpsp'),
-              ],
-            ),
-            textDirection: TextDirection.rtl,
-            textAlign: TextAlign.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                arabicContent.toString(),
+                style: const TextStyle(
+                  fontFamily: 'Arabic',
+                  fontSize: 26,
+                  letterSpacing: 0,
+                  wordSpacing: 5,
+                  height: 1.8,
+                  color: Colors.black87,
+                  fontFeatures: [
+                    FontFeature.superscripts(),
+                    FontFeature.subscripts(),
+                    FontFeature.enable('curs'),
+                    FontFeature.enable('ccmp'),
+                    FontFeature.enable('cpsp'),
+                  ],
+                ),
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTransliteration(Map<String, dynamic> line) {
+  Widget _buildTransliterationGrouped(Map<String, dynamic> line) {
     final transliteration = line['RArabic'] ?? '';
     if (transliteration.toString().trim().isEmpty)
       return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            transliteration.toString(),
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-              height: 1.6,
-              letterSpacing: 0.2,
-              fontFeatures: [
-                FontFeature.superscripts(),
-                FontFeature.subscripts(),
-                FontFeature.enable('curs'),
-                FontFeature.enable('ccmp'),
-                FontFeature.enable('cpsp'),
-              ],
-            ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: Colors.yellow.shade50,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: Colors.yellow.shade200,
+            width: 0.5,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              transliteration.toString(),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.6,
+                // letterSpacing: 0.2,
+                fontFeatures: [
+                  FontFeature.superscripts(),
+                  FontFeature.subscripts(),
+                  FontFeature.enable('curs'),
+                  FontFeature.enable('ccmp'),
+                  FontFeature.enable('cpsp'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTranslation(Map<String, dynamic> line) {
+  Widget _buildTranslationGrouped(Map<String, dynamic> line) {
     final translation = line[_selectedLanguage] ?? '';
     if (translation.toString().trim().isEmpty) return const SizedBox.shrink();
+
+    String languageLabel = 'Translation';
+    Color bgColor = Colors.green[50]!;
+    Color borderColor = Colors.green[200]!;
+
+    if (_selectedLanguage == 'Urdu') {
+      languageLabel = 'Urdu Translation';
+    } else if (_selectedLanguage == 'RUrdu') {
+      languageLabel = 'Urdu Translation (Roman)';
+    } else if (_selectedLanguage == 'English') {
+      languageLabel = 'English Translation';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Text(
-          //   'Translation ($_selectedLanguage)',
-          //   style: TextStyle(
-          //     fontSize: 11,
-          //     fontWeight: FontWeight.w600,
-          //     color: Colors.grey[700],
-          //     letterSpacing: 0.5,
-          //   ),
-          // ),
-          // const SizedBox(height: 6),
-          Text(
-            translation.toString(),
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-              height: 1.6,
-              letterSpacing: 1,
-            ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: borderColor,
+            width: 0.5,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              translation.toString(),
+              textAlign: (_selectedLanguage == 'RUrdu')
+                  ? TextAlign.center
+                  : TextAlign.left,
+              textDirection: (_selectedLanguage == 'RUrdu')
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.6,
+                // letterSpacing: 0.2,
+                fontFeatures: [
+                  FontFeature.superscripts(),
+                  FontFeature.subscripts(),
+                  FontFeature.enable('curs'),
+                  FontFeature.enable('ccmp'),
+                  FontFeature.enable('cpsp'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -435,11 +539,6 @@ class _DetailedScreenState extends State<DetailedScreen> {
   /// Fetches data for the hyperlink and navigates to the detail page
   void _onHyperlinkTap(String hyperlinkName) async {
     try {
-      // Show loading indicator
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(content: Text('Loading hyperlink...')),
-      // );
-
       final db = DatabaseHelper();
 
       // Fetch lines using the hyperlink name
@@ -553,7 +652,6 @@ class _DetailedScreenFromHyperlinkState
       _selectedLanguage = prefs.getString('selectedLanguage') ?? 'English';
       if (!Language.values.map((e) => e.name).contains(_selectedLanguage)) {
         _selectedLanguage = 'English';
-        // _selectedLanguage = 'RUrdu';
       }
     });
   }
@@ -691,12 +789,11 @@ class _DetailedScreenFromHyperlinkState
                     _buildTitle(line),
                     // Description
                     _buildDescription(line),
-                    // Arabic Content
+                    // Grouped content
                     if (_showArabic) _buildArabicContent(line),
-                    // Transliteration (RArabic)
-                    if (_showTransliteration) _buildTransliteration(line),
-                    // Translation (Language content)
-                    if (_showTranslation) _buildTranslation(line),
+                    if (_showTransliteration)
+                      _buildTransliterationGrouped(line),
+                    if (_showTranslation) _buildTranslationGrouped(line),
                     // Spacing between items
                     const SizedBox(height: 20),
                   ],
@@ -787,64 +884,116 @@ class _DetailedScreenFromHyperlinkState
             color: Colors.amber[50],
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Text(
-            arabicContent.toString(),
-            style: const TextStyle(
-              fontFamily: 'Arabic',
-              fontSize: 26,
-              letterSpacing: 0,
-              height: 1.8,
-              color: Colors.black87,
-            ),
-            textDirection: TextDirection.rtl,
-            textAlign: TextAlign.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                arabicContent.toString(),
+                style: const TextStyle(
+                  fontFamily: 'Arabic',
+                  fontSize: 26,
+                  letterSpacing: 0,
+                  height: 1.8,
+                  color: Colors.black87,
+                ),
+                textDirection: TextDirection.rtl,
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTransliteration(Map<String, dynamic> line) {
+  Widget _buildTransliterationGrouped(Map<String, dynamic> line) {
     final transliteration = line['RArabic'] ?? '';
     if (transliteration.toString().trim().isEmpty)
       return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            transliteration.toString(),
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-              height: 1.6,
-              letterSpacing: 0.2,
-            ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: Colors.blue[50],
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: Colors.blue[200]!,
+            width: 0.5,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              transliteration.toString(),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.6,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildTranslation(Map<String, dynamic> line) {
+  Widget _buildTranslationGrouped(Map<String, dynamic> line) {
     final translation = line[_selectedLanguage] ?? '';
     if (translation.toString().trim().isEmpty) return const SizedBox.shrink();
+
+    // String languageLabel = 'Translation';
+    Color bgColor = Colors.green[50]!;
+    Color borderColor = Colors.green[200]!;
+
+    // if (_selectedLanguage == 'Urdu') {
+    //   languageLabel = 'Urdu Translation';
+    // } else if (_selectedLanguage == 'RUrdu') {
+    //   languageLabel = 'Urdu Translation (Roman)';
+    // } else if (_selectedLanguage == 'English') {
+    //   languageLabel = 'English Translation';
+    // }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            translation.toString(),
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-              height: 1.6,
-              letterSpacing: 1,
-            ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: borderColor,
+            width: 0.5,
           ),
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Text(
+            //   languageLabel,
+            //   style: TextStyle(
+            //     fontSize: 11,
+            //     fontWeight: FontWeight.w600,
+            //     color: Colors.grey[700],
+            //     letterSpacing: 0.5,
+            //   ),
+            // ),
+            // const SizedBox(height: 8),
+            Text(
+              translation.toString(),
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+                height: 1.6,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -882,10 +1031,6 @@ class _DetailedScreenFromHyperlinkState
   /// Handle hyperlink tap event
   void _onHyperlinkTap(String hyperlinkName) async {
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Loading hyperlink...')),
-      );
-
       final db = DatabaseHelper();
       final lines = await db.getLinesByHyperlinkName(hyperlinkName);
 
