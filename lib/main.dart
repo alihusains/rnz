@@ -84,6 +84,7 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 
