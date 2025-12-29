@@ -1,90 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:raazoneyaz/categories_screen.dart';
+import 'package:raazoneyaz/language_selection_screen.dart';
+import 'package:raazoneyaz/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'database_helper.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp();
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Category Explorer',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      title: 'Raazoneyaz',
+      theme: AppTheme.getTheme(),
       navigatorKey: navigatorKey,
-      home: LanguageSelector(),
+      home: const LanguageCheckerScreen(),
     );
   }
 }
 
-class LanguageSelector extends StatefulWidget {
+/// Initial screen that checks if language is already selected
+/// If yes, navigates to CategoriesScreen
+/// If no, navigates to LanguageSelectionScreen
+class LanguageCheckerScreen extends StatefulWidget {
+  const LanguageCheckerScreen();
+
   @override
-  _LanguageSelectorState createState() => _LanguageSelectorState();
+  State<LanguageCheckerScreen> createState() => _LanguageCheckerScreenState();
 }
 
-class _LanguageSelectorState extends State<LanguageSelector> {
+class _LanguageCheckerScreenState extends State<LanguageCheckerScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAndSelectLanguage();
+    _checkLanguageSelection();
   }
 
-  Future<void> _checkAndSelectLanguage() async {
+  Future<void> _checkLanguageSelection() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Check if a language is already selected
     if (prefs.containsKey('selectedLanguage')) {
-      _navigateToHome();
-      return;
-    }
-
-    // Display a dialog to select a language
-    final languages = ['English', 'RUrdu', 'Urdu', 'Gujarati'];
-    String? selectedLanguage;
-
-    await showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Select Language'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: languages.map((language) {
-              return ListTile(
-                title: Text(language),
-                onTap: () {
-                  selectedLanguage = language;
-                  Navigator.of(context).pop();
-                },
-              );
-            }).toList(),
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const CategoriesScreen()),
+        );
+      }
+    } else {
+      // Navigate to language selection screen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const LanguageSelectionScreen(),
           ),
         );
-      },
-    );
-
-    // Save the selected language and navigate to the home screen
-    if (selectedLanguage != null) {
-      await prefs.setString('selectedLanguage', selectedLanguage!);
-      _navigateToHome();
+      }
     }
-  }
-
-  void _navigateToHome() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => CategoriesScreen()),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(child: CircularProgressIndicator()),
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
     );
   }
 }

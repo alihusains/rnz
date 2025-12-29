@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:raazoneyaz/detail_screen.dart';
+import 'package:raazoneyaz/settings_screen.dart';
+import 'package:raazoneyaz/app_theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database_helper.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -23,16 +26,71 @@ class CategoriesScreen extends StatefulWidget {
 class _CategoriesScreenState extends State<CategoriesScreen> {
   List<Map<String, dynamic>> items = [];
   late DatabaseHelper _dbHelper;
+  String? _selectedLanguage;
 
   @override
   void initState() {
     super.initState();
     _dbHelper = DatabaseHelper();
-    if (widget.categoryId == 0) {
-      _fetchCategories();
-    } else {
-      _fetchSubcategories();
+    _loadLanguagePreference();
+  }
+
+  Future<void> _loadLanguagePreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final language = prefs.getString('selectedLanguage') ?? 'English';
+      setState(() {
+        _selectedLanguage = language;
+      });
+      // Fetch data after language is loaded
+      if (widget.categoryId == 0) {
+        _fetchCategories();
+      } else {
+        _fetchSubcategories();
+      }
+    } catch (e) {
+      debugPrint('Error loading language preference: $e');
+      setState(() {
+        _selectedLanguage = 'English';
+      });
+      if (widget.categoryId == 0) {
+        _fetchCategories();
+      } else {
+        _fetchSubcategories();
+      }
     }
+  }
+
+  /// Get the display column name based on selected language
+  String _getDisplayColumnName() {
+    switch (_selectedLanguage) {
+      case 'English':
+        return 'English';
+
+      case 'Urdu':
+        return 'Urdu';
+
+      case 'RUrdu':
+        return 'RUrdu';
+
+      default:
+        return 'English';
+    }
+  }
+
+  /// Get display text from item based on selected language
+  /// Tries language-specific IndexName first, then language-specific Name,
+  /// then falls back to EnglishName
+  String _getDisplayText(Map<String, dynamic> item) {
+    final columnName = _getDisplayColumnName();
+    final indexColumnName = '${columnName}IndexName';
+
+    // Try index name first, then regular name, fallback to English
+    return item[indexColumnName] ??
+        item[columnName] ??
+        item['EnglishIndexName'] ??
+        item['EnglishName'] ??
+        '';
   }
 
   Future<void> _fetchCategories() async {
@@ -99,62 +157,114 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       appBar: AppBar(
         title: Text(widget.title ?? (isRoot ? 'Categories' : 'Subcategories')),
         automaticallyImplyLeading: !isRoot,
-      ),
-      body: items.isEmpty
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, index) {
-                final item = items[index];
-                final hasChildren = item['HasChildren'] == 1;
-                final displayText =
-                    item['EnglishIndexName'] ?? item['EnglishName'] ?? '';
-                return ListTile(
-                  title: Text(displayText),
-                  trailing: hasChildren ? Icon(Icons.arrow_forward) : null,
-                  onTap: () {
-                    if (isRoot) {
-                      // tapped a top-level category
-                      final catId = item['Id'] as int;
-                      debugPrint(
-                          'Tapped top-level category: CategoryId=$catId, title=$displayText');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoriesScreen(
-                            categoryId: catId,
-                            parentId: catId,
-                            level: 0,
-                            title: displayText,
-                          ),
-                        ),
-                      );
-                    } else if (hasChildren) {
-                      // deeper level
-                      final nextParent = item['Id'] as int;
-                      debugPrint(
-                          'Tapped subcategory: CategoryId=${widget.categoryId}, ParentId=$nextParent, Level=${widget.level + 1}, title=$displayText');
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoriesScreen(
-                            categoryId: widget.categoryId,
-                            parentId: nextParent,
-                            level: widget.level + 1,
-                            title: displayText,
-                          ),
-                        ),
-                      );
-                    } else {
-                      // no children, navigate to detail
-                      debugPrint(
-                          'Tapped leaf item: Id=${item['Id']}, title=$displayText');
-                      _navigateToDetailScreen(item['Id'] as int, displayText);
-                    }
+        actions: isRoot
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SettingsScreen(),
+                      ),
+                    ).then((_) {
+                      _loadLanguagePreference();
+                    });
                   },
-                );
-              },
-            ),
+                ),
+              ]
+            : null,
+      ),
+      body: Container(
+        color: AppTheme.creamWhite,
+        child: items.isEmpty
+            ? const Center(child: CircularProgressIndicator())
+            : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                itemCount: items.length,
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  final hasChildren = item['HasChildren'] == 1;
+                  final displayText = _getDisplayText(item);
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8.0, vertical: 4.0),
+                    child: Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: AppTheme.primaryGold.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        title: Text(
+                          displayText,
+                          style: const TextStyle(
+                            color: AppTheme.darkGreen,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                          ),
+                        ),
+                        trailing: hasChildren
+                            ? const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 18,
+                                color: AppTheme.primaryGold,
+                              )
+                            : Icon(
+                                Icons.chevron_right,
+                                color: AppTheme.primaryGreen
+                                    .withValues(alpha: 0.4),
+                              ),
+                        onTap: () {
+                          if (isRoot) {
+                            final catId = item['Id'] as int;
+                            debugPrint(
+                                'Tapped top-level category: CategoryId=$catId, title=$displayText');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoriesScreen(
+                                  categoryId: catId,
+                                  parentId: catId,
+                                  level: 0,
+                                  title: displayText,
+                                ),
+                              ),
+                            );
+                          } else if (hasChildren) {
+                            final nextParent = item['Id'] as int;
+                            debugPrint(
+                                'Tapped subcategory: CategoryId=${widget.categoryId}, ParentId=$nextParent, Level=${widget.level + 1}, title=$displayText');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoriesScreen(
+                                  categoryId: widget.categoryId,
+                                  parentId: nextParent,
+                                  level: widget.level + 1,
+                                  title: displayText,
+                                ),
+                              ),
+                            );
+                          } else {
+                            debugPrint(
+                                'Tapped leaf item: Id=${item['Id']}, title=$displayText');
+                            _navigateToDetailScreen(
+                                item['Id'] as int, displayText);
+                          }
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
     );
   }
 }
