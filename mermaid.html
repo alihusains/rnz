@@ -1,0 +1,81 @@
+flowchart TD
+
+subgraph group_shared_dart["Shared Dart"]
+  node_lib_main["App entry<br/>bootstrap<br/>[main.dart]"]
+  node_lib_theme["Theme<br/>[app_theme.dart]"]
+  node_lib_db[("DB helper<br/>local storage")]
+  node_lib_categories["Categories<br/>screen"]
+  node_lib_detail["Detail view<br/>screen<br/>[detail_screen.dart]"]
+  node_lib_bookmarks["Bookmarks<br/>screen"]
+  node_lib_settings["Settings<br/>screen"]
+  node_lib_language["Language select<br/>screen"]
+end
+
+subgraph group_assets["Assets"]
+  node_asset_db[("ron.db<br/>bundled database<br/>[ron.db]")]
+  node_asset_fonts["Fonts<br/>typography assets"]
+end
+
+subgraph group_platforms["Platform Runners"]
+  node_android_runner["Android host<br/>platform shell<br/>[MainActivity.kt]"]
+  node_ios_runner["iOS host<br/>platform shell<br/>[AppDelegate.swift]"]
+  node_web_runner["Web host<br/>platform shell<br/>[index.html]"]
+  node_linux_runner["Linux host<br/>platform shell<br/>[main.cc]"]
+  node_macos_runner["macOS host<br/>platform shell"]
+  node_windows_runner["Windows host<br/>platform shell<br/>[main.cpp]"]
+end
+
+subgraph group_tests["Tests"]
+  node_widget_test["Widget test<br/>[widget_test.dart]"]
+end
+
+node_android_runner -->|"launches"| node_lib_main
+node_ios_runner -->|"launches"| node_lib_main
+node_web_runner -->|"launches"| node_lib_main
+node_linux_runner -->|"launches"| node_lib_main
+node_macos_runner -->|"launches"| node_lib_main
+node_windows_runner -->|"launches"| node_lib_main
+node_lib_main -->|"applies"| node_lib_theme
+node_lib_main -->|"opens"| node_lib_categories
+node_lib_categories -->|"navigates"| node_lib_detail
+node_lib_categories -->|"navigates"| node_lib_bookmarks
+node_lib_categories -->|"navigates"| node_lib_settings
+node_lib_settings -->|"opens"| node_lib_language
+node_lib_categories -->|"reads"| node_lib_db
+node_lib_detail -->|"reads"| node_lib_db
+node_lib_bookmarks -->|"reads"| node_lib_db
+node_lib_settings -->|"updates"| node_lib_db
+node_lib_language -->|"updates"| node_lib_db
+node_lib_theme -->|"uses"| node_asset_fonts
+node_lib_db -->|"queries"| node_asset_db
+node_widget_test -.->|"verifies"| node_lib_main
+
+click node_lib_main "https://github.com/alihusains/rnz/blob/main/lib/main.dart"
+click node_lib_theme "https://github.com/alihusains/rnz/blob/main/lib/app_theme.dart"
+click node_lib_db "https://github.com/alihusains/rnz/blob/main/lib/database_helper.dart"
+click node_lib_categories "https://github.com/alihusains/rnz/blob/main/lib/categories_screen.dart"
+click node_lib_detail "https://github.com/alihusains/rnz/blob/main/lib/detail_screen.dart"
+click node_lib_bookmarks "https://github.com/alihusains/rnz/blob/main/lib/bookmarks_screen.dart"
+click node_lib_settings "https://github.com/alihusains/rnz/blob/main/lib/settings_screen.dart"
+click node_lib_language "https://github.com/alihusains/rnz/blob/main/lib/language_selection_screen.dart"
+click node_asset_db "https://github.com/alihusains/rnz/blob/main/assets/ron.db"
+click node_asset_fonts "https://github.com/alihusains/rnz/tree/main/assets/fonts"
+click node_android_runner "https://github.com/alihusains/rnz/blob/main/android/app/src/main/kotlin/com/example/raazoneyaz/MainActivity.kt"
+click node_ios_runner "https://github.com/alihusains/rnz/blob/main/ios/Runner/AppDelegate.swift"
+click node_web_runner "https://github.com/alihusains/rnz/blob/main/web/index.html"
+click node_linux_runner "https://github.com/alihusains/rnz/blob/main/linux/main.cc"
+click node_macos_runner "https://github.com/alihusains/rnz/blob/main/macos/Runner/MainFlutterWindow.swift"
+click node_windows_runner "https://github.com/alihusains/rnz/blob/main/windows/runner/main.cpp"
+click node_widget_test "https://github.com/alihusains/rnz/blob/main/test/widget_test.dart"
+
+classDef toneNeutral fill:#f8fafc,stroke:#334155,stroke-width:1.5px,color:#0f172a
+classDef toneBlue fill:#dbeafe,stroke:#2563eb,stroke-width:1.5px,color:#172554
+classDef toneAmber fill:#fef3c7,stroke:#d97706,stroke-width:1.5px,color:#78350f
+classDef toneMint fill:#dcfce7,stroke:#16a34a,stroke-width:1.5px,color:#14532d
+classDef toneRose fill:#ffe4e6,stroke:#e11d48,stroke-width:1.5px,color:#881337
+classDef toneIndigo fill:#e0e7ff,stroke:#4f46e5,stroke-width:1.5px,color:#312e81
+classDef toneTeal fill:#ccfbf1,stroke:#0f766e,stroke-width:1.5px,color:#134e4a
+class node_lib_main,node_lib_theme,node_lib_db,node_lib_categories,node_lib_detail,node_lib_bookmarks,node_lib_settings,node_lib_language toneBlue
+class node_asset_db,node_asset_fonts toneAmber
+class node_android_runner,node_ios_runner,node_web_runner,node_linux_runner,node_macos_runner,node_windows_runner toneMint
+class node_widget_test toneRose
