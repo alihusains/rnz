@@ -89,7 +89,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp();
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +103,7 @@ class MyApp extends StatelessWidget {
 }
 
 class LanguageCheckerScreen extends StatefulWidget {
-  const LanguageCheckerScreen();
+  const LanguageCheckerScreen({super.key});
 
   @override
   State<LanguageCheckerScreen> createState() => _LanguageCheckerScreenState();

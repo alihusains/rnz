@@ -4,7 +4,7 @@ import 'package:raazoneyaz/app_theme.dart';
 import 'categories_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
-  const LanguageSelectionScreen();
+  const LanguageSelectionScreen({super.key});
 
   @override
   State<LanguageSelectionScreen> createState() =>
@@ -187,7 +187,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                                       children: [
                                         Text(
                                           language.displayName,
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             fontSize: 17,
                                             fontWeight: FontWeight.w700,
                                             color: AppTheme.darkGreen,
@@ -212,7 +212,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                                     Container(
                                       width: 28,
                                       height: 28,
-                                      decoration: BoxDecoration(
+                                      decoration: const BoxDecoration(
                                         color: AppTheme.primaryGold,
                                         shape: BoxShape.circle,
                                       ),

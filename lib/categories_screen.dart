@@ -1036,12 +1036,12 @@ class CategoriesScreen extends StatefulWidget {
   final String? title;
 
   const CategoriesScreen({
-    Key? key,
+    super.key,
     this.categoryId = 0,
     this.parentId = 0,
     this.level = 0,
     this.title,
-  }) : super(key: key);
+  });
 
   @override
   _CategoriesScreenState createState() => _CategoriesScreenState();

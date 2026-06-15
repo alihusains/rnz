@@ -20,7 +20,7 @@ class DetailedScreen extends StatefulWidget {
   final String title;
   final int subIndexId;
 
-  DetailedScreen({required this.title, required this.subIndexId});
+  const DetailedScreen({super.key, required this.title, required this.subIndexId});
 
   @override
   State<DetailedScreen> createState() => _DetailedScreenState();
@@ -152,7 +152,7 @@ class _DetailedScreenState extends State<DetailedScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 BackButton(
-                  style: ButtonStyle(),
+                  style: const ButtonStyle(),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 Expanded(
@@ -396,8 +396,9 @@ class _DetailedScreenState extends State<DetailedScreen> {
 
   Widget _buildTransliterationGrouped(Map<String, dynamic> line) {
     final transliteration = line['RArabic'] ?? '';
-    if (transliteration.toString().trim().isEmpty)
+    if (transliteration.toString().trim().isEmpty) {
       return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Container(
@@ -595,12 +596,15 @@ class _DetailedScreenState extends State<DetailedScreen> {
       StringBuffer buf = StringBuffer();
       if (title.toString().trim().isNotEmpty) buf.writeln(title);
       if (description.toString().trim().isNotEmpty) buf.writeln(description);
-      if (_showArabic && arabicContent.toString().trim().isNotEmpty)
+      if (_showArabic && arabicContent.toString().trim().isNotEmpty) {
         buf.writeln(arabicContent);
-      if (_showTransliteration && transliteration.toString().trim().isNotEmpty)
+      }
+      if (_showTransliteration && transliteration.toString().trim().isNotEmpty) {
         buf.writeln(transliteration);
-      if (_showTranslation && translation.toString().trim().isNotEmpty)
+      }
+      if (_showTranslation && translation.toString().trim().isNotEmpty) {
         buf.writeln(translation);
+      }
 
       if (buf.isNotEmpty) chunks.add(buf.toString());
     }
@@ -617,7 +621,7 @@ class DetailedScreenFromHyperlink extends StatefulWidget {
   final bool showTransliteration;
   final bool showTranslation;
 
-  DetailedScreenFromHyperlink({
+  const DetailedScreenFromHyperlink({super.key, 
     required this.title,
     required this.lines,
     required this.showArabic,
@@ -678,7 +682,7 @@ class _DetailedScreenFromHyperlinkState
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 BackButton(
-                  style: ButtonStyle(),
+                  style: const ButtonStyle(),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 Expanded(
@@ -908,8 +912,9 @@ class _DetailedScreenFromHyperlinkState
 
   Widget _buildTransliterationGrouped(Map<String, dynamic> line) {
     final transliteration = line['RArabic'] ?? '';
-    if (transliteration.toString().trim().isEmpty)
+    if (transliteration.toString().trim().isEmpty) {
       return const SizedBox.shrink();
+    }
     return Padding(
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Container(
@@ -1084,12 +1089,15 @@ class _DetailedScreenFromHyperlinkState
       StringBuffer buf = StringBuffer();
       if (title.toString().trim().isNotEmpty) buf.writeln(title);
       if (description.toString().trim().isNotEmpty) buf.writeln(description);
-      if (_showArabic && arabicContent.toString().trim().isNotEmpty)
+      if (_showArabic && arabicContent.toString().trim().isNotEmpty) {
         buf.writeln(arabicContent);
-      if (_showTransliteration && transliteration.toString().trim().isNotEmpty)
+      }
+      if (_showTransliteration && transliteration.toString().trim().isNotEmpty) {
         buf.writeln(transliteration);
-      if (_showTranslation && translation.toString().trim().isNotEmpty)
+      }
+      if (_showTranslation && translation.toString().trim().isNotEmpty) {
         buf.writeln(translation);
+      }
 
       if (buf.isNotEmpty) chunks.add(buf.toString());
     }

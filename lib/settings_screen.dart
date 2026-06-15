@@ -440,7 +440,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:raazoneyaz/app_theme.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen();
+  const SettingsScreen({super.key});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -512,10 +512,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Language changed successfully'),
+          const SnackBar(
+            content: Text('Language changed successfully'),
             backgroundColor: AppTheme.successGreen,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
 
@@ -529,10 +529,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       debugPrint('Error saving language preference: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error changing language'),
+          const SnackBar(
+            content: Text('Error changing language'),
             backgroundColor: AppTheme.errorRed,
-            duration: const Duration(seconds: 2),
+            duration: Duration(seconds: 2),
           ),
         );
       }
@@ -653,7 +653,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                         children: [
                                           Text(
                                             language.displayName,
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               fontSize: 15,
                                               fontWeight: FontWeight.w700,
                                               color: AppTheme.darkGreen,
@@ -665,9 +665,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             style: AppTheme.captionStyle,
                                           ),
                                           if (isCurrent)
-                                            Padding(
+                                            const Padding(
                                               padding:
-                                                  const EdgeInsets.only(top: 4),
+                                                  EdgeInsets.only(top: 4),
                                               child: Text(
                                                 '✓ Current',
                                                 style: TextStyle(
@@ -698,7 +698,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                               child: Container(
                                                 width: 12,
                                                 height: 12,
-                                                decoration: BoxDecoration(
+                                                decoration: const BoxDecoration(
                                                   color: AppTheme.primaryGold,
                                                   shape: BoxShape.circle,
                                                 ),
@@ -761,7 +761,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         height: 50,
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            side: BorderSide(
+                            side: const BorderSide(
                               color: AppTheme.primaryGreen,
                               width: 1.5,
                             ),
@@ -776,7 +776,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             });
                             Navigator.of(context).pop(false);
                           },
-                          child: Text(
+                          child: const Text(
                             'Close',
                             style: TextStyle(
                               fontSize: 15,
@@ -867,7 +867,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.darkGreen,

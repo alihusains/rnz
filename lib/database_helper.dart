@@ -226,7 +226,7 @@ class DatabaseHelper {
         String value;
         if (arg is String) {
           final escaped = arg.replaceAll("'", "''");
-          value = "'" + escaped + "'";
+          value = "'$escaped'";
         } else {
           value = arg.toString();
         }
@@ -354,7 +354,7 @@ class DatabaseHelper {
         SELECT lm.*, 
                l.${language}Title, 
                l.${language}Description, 
-               l.${language}, 
+               l.$language, 
                l.RArabic,
                COALESCE(
                  NULLIF(
@@ -414,7 +414,7 @@ class DatabaseHelper {
         SELECT lm.*, 
                l.${language}Title, 
                l.${language}Description, 
-               l.${language}, 
+               l.$language, 
                l.RArabic,
                COALESCE(
                  NULLIF(

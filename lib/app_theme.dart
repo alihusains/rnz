@@ -14,7 +14,7 @@ class AppTheme {
   static const Color successGreen = Color(0xFF388E3C); // Success Green
 
   // Gradient backgrounds
-  static LinearGradient islamicGradient = LinearGradient(
+  static LinearGradient islamicGradient = const LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
@@ -23,7 +23,7 @@ class AppTheme {
     ],
   );
 
-  static LinearGradient lightGradient = LinearGradient(
+  static LinearGradient lightGradient = const LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
@@ -34,12 +34,12 @@ class AppTheme {
 
   // AppBar Theme
   static AppBarTheme getAppBarTheme() {
-    return AppBarTheme(
+    return const AppBarTheme(
       backgroundColor: primaryGreen,
       foregroundColor: lightText,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
         color: lightText,

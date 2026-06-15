@@ -5,7 +5,7 @@ import 'package:raazoneyaz/app_theme.dart';
 import 'database_helper.dart';
 
 class BookmarksScreen extends StatefulWidget {
-  const BookmarksScreen();
+  const BookmarksScreen({super.key});
 
   @override
   State<BookmarksScreen> createState() => _BookmarksScreenState();
@@ -140,7 +140,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 8),
-                            leading: Icon(
+                            leading: const Icon(
                               Icons.bookmark,
                               color: AppTheme.primaryGold,
                             ),
